@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+import { getMouseEnterDirection } from '@/utils/getMouseEnterDirection';
 
 interface UseHoverFillProps {
   /**
@@ -27,33 +29,6 @@ interface UseHoverFillProps {
    */
   z?: number | 'auto';
 }
-
-const getMouseEnterDirection = (e: MouseEvent, el: HTMLElement) => {
-  const rect = el.getBoundingClientRect();
-
-  let topEdgeDistance = Math.abs(rect.top - e.clientY);
-  let bottomEdgeDistance = Math.abs(rect.bottom - e.clientY);
-  let leftEdgeDistance = Math.abs(rect.left - e.clientX);
-  let rightEdgeDistance = Math.abs(rect.right - e.clientX);
-
-  const min = Math.min(
-    topEdgeDistance,
-    bottomEdgeDistance,
-    leftEdgeDistance,
-    rightEdgeDistance
-  );
-
-  switch (min) {
-    case topEdgeDistance:
-      return 'top';
-    case bottomEdgeDistance:
-      return 'bottom';
-    case leftEdgeDistance:
-      return 'left';
-    case rightEdgeDistance:
-      return 'right';
-  }
-};
 
 export default function HoverFill({
   color = 'white',
@@ -86,111 +61,120 @@ export default function HoverFill({
   const convexLeftPath = `M 0 0 Q 50 0 100 0 Q 100 50 100 100 Q 50 100 0 100 Q -50 50 0 0`;
   const convexRightPath = `M 0 0 Q 50 0 100 0 Q 150 50 100 100 Q 50 100 0 100 Q 0 50 0 0`;
 
-  useEffect(() => {
-    if (!svgRef.current || !pathRef.current) return;
+  useGSAP(
+    () => {
+      if (!svgRef.current || !pathRef.current) return;
 
-    const parent = (svgRef.current as SVGSVGElement).parentElement;
-    if (!parent) return;
+      const parent = (svgRef.current as SVGSVGElement).parentElement;
+      if (!parent) return;
 
-    const handleMouseEnter = (e: MouseEvent) => {
-      if (hovered.current) return;
-      hovered.current = true;
-      if (pinned) return;
-      const mouseDirection = getMouseEnterDirection(e, e.target as HTMLElement);
-      if (mouseDirection === 'bottom') slideUpIn();
-      else if (mouseDirection === 'top') slideDownIn();
-      else if (mouseDirection === 'left') slideLeftIn();
-      else if (mouseDirection === 'right') slideRightIn();
-    };
+      const handleMouseEnter = (e: MouseEvent) => {
+        if (hovered.current) return;
+        hovered.current = true;
+        if (pinned) return;
+        const mouseDirection = getMouseEnterDirection(
+          e,
+          e.target as HTMLElement
+        );
+        if (mouseDirection === 'bottom') slideUpIn();
+        else if (mouseDirection === 'top') slideDownIn();
+        else if (mouseDirection === 'left') slideLeftIn();
+        else if (mouseDirection === 'right') slideRightIn();
+      };
 
-    const handleMouseLeave = (e: MouseEvent) => {
-      if (!hovered.current) return;
-      hovered.current = false;
-      if (pinned) return;
-      const mouseDirection = getMouseEnterDirection(e, e.target as HTMLElement);
-      if (mouseDirection === 'bottom') slideDownOut();
-      else if (mouseDirection === 'top') slideUpOut();
-      else if (mouseDirection === 'left') slideLeftOut();
-      else if (mouseDirection === 'right') slideRightOut();
-    };
+      const handleMouseLeave = (e: MouseEvent) => {
+        if (!hovered.current) return;
+        hovered.current = false;
+        if (pinned) return;
+        const mouseDirection = getMouseEnterDirection(
+          e,
+          e.target as HTMLElement
+        );
+        if (mouseDirection === 'bottom') slideDownOut();
+        else if (mouseDirection === 'top') slideUpOut();
+        else if (mouseDirection === 'left') slideLeftOut();
+        else if (mouseDirection === 'right') slideRightOut();
+      };
 
-    const svg = svgRef.current;
-    const path = pathRef.current;
+      const svg = svgRef.current;
+      const path = pathRef.current;
 
-    const animation = (vbFrom: string, vbTo: string, drawPath: string) => {
-      const tl = gsap.timeline({
-        defaults: { duration: duration, ease: 'power2.out' },
-      });
-      tl.set(svg, { attr: { viewBox: vbFrom } });
-      tl.set(path, { attr: { d: squarePath } });
+      const animation = (vbFrom: string, vbTo: string, drawPath: string) => {
+        const tl = gsap.timeline({
+          defaults: { duration: duration, ease: 'power2.out' },
+        });
+        tl.set(svg, { attr: { viewBox: vbFrom } });
+        tl.set(path, { attr: { d: squarePath } });
 
-      tl.to(
-        svg,
-        {
-          attr: {
-            viewBox: vbTo,
+        tl.to(
+          svg,
+          {
+            attr: {
+              viewBox: vbTo,
+            },
           },
-        },
-        0
-      );
-      tl.to(
-        path,
-        {
-          attr: {
-            d: drawPath,
+          0
+        );
+        tl.to(
+          path,
+          {
+            attr: {
+              d: drawPath,
+            },
           },
-        },
-        0
-      ).to(
-        path,
-        {
-          attr: {
-            d: squarePath,
+          0
+        ).to(
+          path,
+          {
+            attr: {
+              d: squarePath,
+            },
           },
-        },
-        '-=70%'
-      );
-    };
+          '-=70%'
+        );
+      };
 
-    const slideDownOut = () => {
-      animation(vbCenter, vbBottom, concaveTopPath);
-    };
+      const slideDownOut = () => {
+        animation(vbCenter, vbBottom, concaveTopPath);
+      };
 
-    const slideUpIn = () => {
-      animation(vbBottom, vbCenter, convexTopPath);
-    };
+      const slideUpIn = () => {
+        animation(vbBottom, vbCenter, convexTopPath);
+      };
 
-    const slideUpOut = () => {
-      animation(vbCenter, vbTop, concaveBottomPath);
-    };
+      const slideUpOut = () => {
+        animation(vbCenter, vbTop, concaveBottomPath);
+      };
 
-    const slideDownIn = () => {
-      animation(vbTop, vbCenter, convexBottomPath);
-    };
+      const slideDownIn = () => {
+        animation(vbTop, vbCenter, convexBottomPath);
+      };
 
-    const slideLeftIn = () => {
-      animation(vbLeft, vbCenter, convexRightPath);
-    };
+      const slideLeftIn = () => {
+        animation(vbLeft, vbCenter, convexRightPath);
+      };
 
-    const slideRightIn = () => {
-      animation(vbRight, vbCenter, convexLeftPath);
-    };
+      const slideRightIn = () => {
+        animation(vbRight, vbCenter, convexLeftPath);
+      };
 
-    const slideLeftOut = () => {
-      animation(vbCenter, vbLeft, concaveRightPath);
-    };
+      const slideLeftOut = () => {
+        animation(vbCenter, vbLeft, concaveRightPath);
+      };
 
-    const slideRightOut = () => {
-      animation(vbCenter, vbRight, concaveLeftPath);
-    };
+      const slideRightOut = () => {
+        animation(vbCenter, vbRight, concaveLeftPath);
+      };
 
-    parent.addEventListener('mouseenter', handleMouseEnter);
-    parent.addEventListener('mouseleave', handleMouseLeave);
-    return () => {
-      parent.removeEventListener('mouseenter', handleMouseEnter);
-      parent.removeEventListener('mouseleave', handleMouseLeave);
-    };
-  }, [pinned]);
+      parent.addEventListener('mouseenter', handleMouseEnter);
+      parent.addEventListener('mouseleave', handleMouseLeave);
+      return () => {
+        parent.removeEventListener('mouseenter', handleMouseEnter);
+        parent.removeEventListener('mouseleave', handleMouseLeave);
+      };
+    },
+    { dependencies: [pinned] }
+  );
 
   return (
     <svg

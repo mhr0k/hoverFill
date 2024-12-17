@@ -37,7 +37,8 @@ The `HoverFill` component creates an SVG overlay that animates dynamically based
 ## Dependencies
 
 - React
-- GSAP (Required)
+- GSAP
+- @gsap/react
 
 ## Performance Notes
 
